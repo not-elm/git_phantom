@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use sqlx::types::Uuid;
-use std::fmt::{Display, Formatter, Write};
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct SessionToken(pub Uuid);
