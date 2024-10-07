@@ -5,7 +5,7 @@ pub async fn open(
     ws: WebSocketUpgrade
 ) -> impl IntoResponse {
     ws.on_upgrade(|mut ws| async move {
-        while let Some(Ok(message)) = ws.recv().await {}
+        while let Some(Ok(_)) = ws.recv().await {}
     })
 }
 
