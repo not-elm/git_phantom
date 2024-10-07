@@ -9,6 +9,7 @@ members = [
 ]
 
 [dependencies]
+thiserror = "1.0.64"
 axum = { version = "0.7.4", features = ["ws"] }
 shuttle-axum = "0.47.0"
 shuttle-runtime = "0.47.0"
@@ -16,7 +17,13 @@ shuttle-shared-db = { version = "0.47.0", features = ["postgres", "sqlx"] }
 sqlx = { version = "0.7.1", features = ["uuid", "time"] }
 tokio = "1.28.2"
 oauth2 = "4.4.2"
+serde = { workspace = true }
+async-trait = { workspace = true }
+
+[dev-dependencies]
+lazy_static = "1.5.0"
 
 [workspace.dependencies]
 serde = { version = "1.0.210", features = ["derive"] }
 serde_json = "1.0.128"
+async-trait = "0.1.83"

@@ -1,4 +1,7 @@
 mod route;
+mod db;
+mod middleware;
+mod error;
 
 use axum::{routing::get, Router};
 use shuttle_runtime::SecretStore;
@@ -28,4 +31,10 @@ fn app() -> Router {
 fn room_router() -> Router {
     Router::new()
         .route("/open", get(route::room::open))
+}
+
+
+#[cfg(test)]
+pub(crate) mod test {
+    pub type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 }

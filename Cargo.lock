@@ -1588,12 +1588,16 @@ dependencies = [
 name = "meltos"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "axum 0.7.7",
+ "lazy_static",
  "oauth2",
+ "serde",
  "shuttle-axum",
  "shuttle-runtime",
  "shuttle-shared-db",
  "sqlx",
+ "thiserror",
  "tokio",
 ]
 
