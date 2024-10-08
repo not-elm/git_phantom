@@ -17,6 +17,7 @@ pub async fn listen(pool: PgPool, request_id: RequestId) -> ServerResult<AsyncSt
             if request_id_string != notify.payload() {
                 continue;
             }
+
             if let Ok(response) = pop_response(&pool, &request_id).await{
                 yield response;
             }
@@ -34,10 +35,11 @@ pub async fn request_to_owner(pool: &PgPool, request: &RequestNotify) -> ServerR
     Ok(())
 }
 
-pub(crate) async fn new_request(pool: &PgPool) -> ServerResult<RequestId> {
+pub(crate) async fn new_request(pool: &PgPool, request_body: &[u8]) -> ServerResult<RequestId> {
     let request_id = sqlx::query(r#"
-    INSERT INTO requests(request_id) VALUES(gen_random_uuid()) RETURNING request_id
+    INSERT INTO requests(request_body) VALUES($1) RETURNING request_id
     "#)
+        .bind(request_body)
         .fetch_one(pool)
         .await?
         .get(0);
@@ -59,7 +61,8 @@ pub(crate) async fn pop_response(pool: &PgPool, request_id: &RequestId) -> Serve
 mod tests {
     use crate::db::channel;
     use crate::db::channel::guest::{new_request, request_to_owner};
-    use crate::db::channel::RequestNotify;
+    use crate::db::channel::{convert_to_git_request, RequestNotify};
+    use crate::db::test::DBInit;
     use crate::middleware::user_id::UserId;
     use crate::test::TestResult;
     use futures_util::pin_mut;
@@ -69,46 +72,62 @@ mod tests {
 
     #[sqlx::test]
     async fn ok_new_request(pool: PgPool) -> TestResult {
-        let id = new_request(&pool).await?;
+        let id = new_request(&pool, &[]).await?;
         assert!(!id.0.as_bytes().is_empty());
         Ok(())
     }
 
     #[sqlx::test]
     async fn ok_recv_response(pool: PgPool) -> TestResult {
-        let id = new_request(&pool).await?;
+        let id = new_request(&pool, &[]).await?;
         let stream = channel::guest::listen(pool.clone(), id).await?;
         pin_mut!(stream);
 
         let data = vec![1, 2, 3];
         channel::owner::response(&pool, &id, &data).await?;
 
-        let actual = stream.next().await.unwrap();
-        assert_eq!(actual, data);
+        tokio::select! {
+            actual =  stream.next() => {
+                assert_eq!(actual.unwrap(), data);
+            }
+            _ = tokio::time::sleep(Duration::from_secs(1)) => {
+                panic!("time out");
+            }
+        }
         Ok(())
     }
 
     #[sqlx::test]
     async fn ok_recv_request(pool: PgPool) -> TestResult {
-        let stream = channel::owner::listen(&pool, UserId::USER1).await?;
+        pool.init().await;
+        let stream = channel::owner::listen(pool.clone(), UserId::USER1).await?;
         pin_mut!(stream);
-        let request_id = new_request(&pool).await?;
+        let request_id = new_request(&pool, &[]).await?;
         let request = RequestNotify {
             id: request_id,
             to: UserId::USER1,
             ..Default::default()
         };
+
+        tokio::time::sleep(Duration::from_millis(100)).await;
         request_to_owner(&pool, &request).await?;
-        let actual = stream.next().await.unwrap();
-        assert_eq!(actual, request);
+        tokio::select! {
+            actual =  stream.next() => {
+                assert_eq!(actual.unwrap(), convert_to_git_request(request, vec![]));
+            }
+            _ = tokio::time::sleep(Duration::from_secs(1)) => {
+                panic!("time out");
+            }
+        }
+
         Ok(())
     }
 
     #[sqlx::test]
     async fn no_recv_request(pool: PgPool) -> TestResult {
-        let stream = channel::owner::listen(&pool, UserId::USER1).await?;
+        let stream = channel::owner::listen(pool.clone(), UserId::USER1).await?;
         pin_mut!(stream);
-        let request_id = new_request(&pool).await?;
+        let request_id = new_request(&pool, &[]).await?;
         let request = RequestNotify {
             id: request_id,
             ..Default::default()
