@@ -16,6 +16,9 @@ pub enum ServerError {
     #[error("Invalid session token")]
     InvalidSessionToken,
 
+    #[error("Required session token")]
+    RequiredSessionToken,
+
     #[cfg_attr(test, error("sqlx error: {0}"))]
     #[cfg_attr(not(test), error("internal server error"))]
     Sqlx(#[from] sqlx::Error),
@@ -24,7 +27,7 @@ pub enum ServerError {
 impl ServerError {
     pub fn as_status(&self) -> StatusCode {
         match self {
-            Self::MissingAuthCode | Self::InvalidSessionToken => StatusCode::BAD_REQUEST,
+            Self::MissingAuthCode | Self::InvalidSessionToken | Self::RequiredSessionToken => StatusCode::BAD_REQUEST,
             Self::FailedConnectGithubApi | Self::Sqlx(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }

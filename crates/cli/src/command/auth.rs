@@ -21,7 +21,10 @@ impl CommandExecutable for Auth {
         start_http_server(self.listen_port, tx);
         webbrowser::open(&format!("{HTTP_SERVER_ADDR}/oauth2/auth"))?;
 
-        let auth_code = rx.recv().await.ok_or_else(|| anyhow::anyhow!("Failed to recv auth code"))?;
+        let auth_code = rx
+            .recv()
+            .await
+            .ok_or_else(|| anyhow::anyhow!("Failed to recv auth code"))?;
         let session_token = register_user(auth_code).await?;
         std::fs::write(session_token_path(), session_token)?;
         println!("{}", colored(255, 255, 0, "Success!"));
@@ -35,11 +38,15 @@ fn colored(r: i32, g: i32, b: i32, text: &str) -> String {
 
 fn start_http_server(port: u64, tx: Sender<String>) {
     tokio::spawn(async move {
-        let listener = TcpListener::bind(format!("0.0.0.0:{port}")).await.expect("Failed to create tcp listener");
+        let listener = TcpListener::bind(format!("0.0.0.0:{port}"))
+            .await
+            .expect("Failed to create tcp listener");
         let router = Router::new()
             .route("/oauth2/callback", axum::routing::get(oauth2_callback))
             .with_state(tx);
-        axum::serve(listener, router).await.expect("Failed to start http server");
+        axum::serve(listener, router)
+            .await
+            .expect("Failed to start http server");
     });
 }
 
@@ -54,7 +61,9 @@ async fn oauth2_callback(
 
 async fn register_user(auth_code: String) -> anyhow::Result<String> {
     let session_token = reqwest::Client::new()
-        .put(format!("{HTTP_SERVER_ADDR}/oauth2/register?code={auth_code}"))
+        .put(format!(
+            "{HTTP_SERVER_ADDR}/oauth2/register?code={auth_code}"
+        ))
         .send()
         .await?
         .text()

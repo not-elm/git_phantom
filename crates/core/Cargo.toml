@@ -1,13 +1,13 @@
 [package]
-name = "core"
+name = "gph_core"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 tokio = "1.40.0"
 tokio-tungstenite = "0.24.0"
-webrtc = "0.11.0"
 anyhow = "1.0.89"
 futures-util = { version = "0.3.30", features = ["sink"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
+uuid = { version = "1.10.0", features = ["serde"] }
