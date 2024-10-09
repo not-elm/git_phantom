@@ -1,13 +1,16 @@
 mod auth;
-mod open;
+mod share;
 
 use async_trait::async_trait;
 use clap::Parser;
 
 #[derive(Parser, Debug)]
 pub enum CliCommand {
+    /// Signup using GitHub oauth2
     Auth(auth::Auth),
-    Open(open::Open),
+
+    ///  Share git repository
+    Share(share::Share),
 }
 
 #[async_trait]
@@ -15,7 +18,7 @@ impl CommandExecutable for CliCommand {
     async fn execute(self) -> anyhow::Result<()> {
         match self {
             Self::Auth(auth) => auth.execute().await,
-            Self::Open(open) => open.execute().await,
+            Self::Share(open) => open.execute().await,
         }
     }
 }

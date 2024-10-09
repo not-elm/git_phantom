@@ -1,7 +1,11 @@
 [package]
-name = "cargo-gph"
+name = "gph-cli"
 version = "0.1.0"
 edition = "2021"
+
+[[bin]]
+name = "gph"
+path = "./src/main.rs"
 
 [dependencies]
 gph_core = { path = "../core" }

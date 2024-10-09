@@ -416,25 +416,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "428d9aa8fbc0670b7b8d6030a7fadd0f86151cae55e4dbbece15f3780a3dfaf3"
 
 [[package]]
-name = "cargo-gph"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "arboard",
- "async-trait",
- "axum 0.7.7",
- "clap",
- "dirs-next",
- "futures-util",
- "gph_core",
- "reqwest 0.12.8",
- "serde_json",
- "tokio",
- "tokio-tungstenite",
- "webbrowser",
-]
-
-[[package]]
 name = "cc"
 version = "1.1.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1119,20 +1100,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d2fabcfbdc87f4758337ca535fb41a6d701b65693ce38287d856d1674551ec9b"
 
 [[package]]
-name = "gph_core"
+name = "gph-cli"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "arboard",
+ "async-trait",
+ "axum 0.7.7",
+ "clap",
+ "dirs-next",
  "futures-util",
- "serde",
+ "gph_core",
+ "reqwest 0.12.8",
  "serde_json",
  "tokio",
  "tokio-tungstenite",
- "uuid",
+ "webbrowser",
 ]
 
 [[package]]
-name = "gph_server"
+name = "gph-server"
 version = "0.1.0"
 dependencies = [
  "async-stream",
@@ -1155,6 +1142,19 @@ dependencies = [
  "tokio-tungstenite",
  "tower 0.5.1",
  "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "gph_core"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "futures-util",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tokio-tungstenite",
  "uuid",
 ]
 

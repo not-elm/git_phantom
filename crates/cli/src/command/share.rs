@@ -15,14 +15,14 @@ use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 
 #[derive(Debug, Clone, Args)]
-pub struct Open {
+pub struct Share {
     /// Remote repository name.
     #[clap(short, long)]
     pub repository: Option<String>,
 }
 
 #[async_trait]
-impl CommandExecutable for Open {
+impl CommandExecutable for Share {
     async fn execute(self) -> anyhow::Result<()> {
         let session_token = std::fs::read_to_string(session_token_path())?;
         let repository_name = match self.repository {

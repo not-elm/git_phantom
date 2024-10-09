@@ -3,14 +3,14 @@
 ## Install
 
 ```shell
-cargo install cargo-gph
+cargo install gph-cli
 ```
 
 ## Usage
 
 ```shell
-cargo gph auth
-cargo gph open
+gph auth
+gph open
 ```
 
 ## Licence
