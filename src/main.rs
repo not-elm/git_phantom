@@ -33,6 +33,8 @@ fn app(app_state: AppState) -> Router {
         }))
         .nest("/oauth2", oauth2_router())
         .nest("/room", room_router())
+        .route("/user_id", get(route::user_id))
+        .route("/git/:user_id/*path", get(route::git).post(route::git))
         .with_state(app_state)
 }
 

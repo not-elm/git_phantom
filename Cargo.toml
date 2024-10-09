@@ -1,5 +1,5 @@
 [package]
-name = "meltos"
+name = "gph_server"
 version = "0.1.0"
 edition = "2021"
 
@@ -25,6 +25,7 @@ serde_json = { workspace = true }
 async-trait = { workspace = true }
 tower = "0.5.1"
 reqwest = { version = "0.12.8", features = ["json"] }
+http-body-util = "0.1.2"
 futures-util = "0.3.31"
 tracing = "0.1.40"
 uuid = { version = "1.10.0", features = ["v4"] }

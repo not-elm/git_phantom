@@ -1,5 +1,7 @@
 pub mod users;
 pub mod channel;
+pub mod rooms;
+
 
 #[cfg(test)]
 pub(crate) mod test {

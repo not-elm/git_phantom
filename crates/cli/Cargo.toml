@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 gph_core = { path = "../core" }
+arboard = "3.4.1"
 webbrowser = "1.0.2"
 dirs-next = "2.0.0"
 clap = { version = "4.5.19", features = ["derive"] }

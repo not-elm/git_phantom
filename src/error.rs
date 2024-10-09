@@ -14,11 +14,20 @@ pub enum ServerError {
     #[error("Failed to connect github api")]
     FailedConnectGithubApi,
 
+    #[error("User room is not open")]
+    UserRoomIsNotOpen,
+
     #[error("Invalid session token")]
     InvalidSessionToken,
 
     #[error("Required session token")]
     RequiredSessionToken,
+
+    #[error("Failed parse request body")]
+    FailedParseRequestBody,
+
+    #[error("Failed recv git response")]
+    FailedRecvGitResponse,
 
     #[cfg_attr(test, error("sqlx error: {0}"))]
     #[cfg_attr(not(test), error("internal server error"))]
@@ -28,7 +37,8 @@ pub enum ServerError {
 impl ServerError {
     pub fn as_status(&self) -> StatusCode {
         match self {
-            Self::MissingAuthCode | Self::InvalidSessionToken | Self::RequiredSessionToken => StatusCode::UNAUTHORIZED,
+            Self::MissingAuthCode | Self::FailedRecvGitResponse | Self::FailedParseRequestBody | Self::UserRoomIsNotOpen => StatusCode::BAD_REQUEST,
+            Self::InvalidSessionToken | Self::RequiredSessionToken => StatusCode::UNAUTHORIZED,
             Self::FailedConnectGithubApi | Self::Sqlx(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }

@@ -7,10 +7,10 @@ use sqlx::postgres::PgListener;
 use sqlx::{Executor, PgPool, Postgres, Row};
 use std::future::Future;
 
-
 pub async fn listen(pool: PgPool, user_id: UserId) -> ServerResult<AsyncStream<GitRequest, impl Future<Output=()> + Send>> {
     let mut listener = PgListener::connect_with(&pool).await?;
     listener.listen("owner").await?;
+
     Ok(async_stream::stream! {
         while let Ok(notify) = listener.recv().await {
             let Ok(meta) = serde_json::from_str::<RequestNotify>(notify.payload()) else {

@@ -4,6 +4,11 @@ CREATE TABLE IF NOT EXISTS users(
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS rooms(
+    user_id BIGINT NOT NULL PRIMARY KEY,
+    is_open boolean NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS requests(
     request_id uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
     request_body BYTEA NOT NULL,

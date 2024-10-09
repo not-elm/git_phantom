@@ -1,4 +1,5 @@
 use crate::db;
+use crate::db::rooms::RoomsTable;
 use crate::error::ServerResult;
 use crate::middleware::user_id::UserId;
 use axum::extract::ws::{Message, WebSocket};
@@ -8,6 +9,7 @@ use futures_util::stream::{SplitSink, SplitStream};
 use futures_util::{pin_mut, SinkExt, StreamExt};
 use gph_core::types::GitResponse;
 use sqlx::PgPool;
+
 
 pub async fn open(
     user_id: UserId,
@@ -21,6 +23,10 @@ pub async fn open(
             _ = listen_owner_channel(&mut ws_tx, pool.clone(), user_id) => {}
         };
 
+        if let Err(e) = pool.update_room_status(user_id, false).await {
+            tracing::error!("Failed to close room {e}");
+        }
+
         if let Err(e) = ws_tx.close().await {
             tracing::error!("Failed close websocket({}): {e}", user_id.0);
         }
@@ -32,9 +38,10 @@ async fn listen_owner_channel(
     pool: PgPool,
     user_id: UserId,
 ) -> ServerResult {
-    let stream = db::channel::owner::listen(pool, user_id).await?;
+    let stream = db::channel::owner::listen(pool.clone(), user_id).await?;
     pin_mut!(stream);
 
+    pool.update_room_status(user_id, true).await?;
     while let Some(git_request) = stream.next().await {
         // If return error, probably websocket has been closed.
         if ws.send(Message::Text(serde_json::to_string(&git_request).unwrap())).await.is_err() {

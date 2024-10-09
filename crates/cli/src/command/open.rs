@@ -1,5 +1,6 @@
 use crate::command::CommandExecutable;
-use crate::util::{app_dir, session_token_path, WS_SERVER_ADDR};
+use crate::util::{app_dir, colored_terminal_text, session_token_path, OutputErr, HTTP_SERVER_ADDR, WS_SERVER_ADDR};
+use arboard::Clipboard;
 use async_trait::async_trait;
 use clap::Args;
 use futures_util::{SinkExt, StreamExt};
@@ -31,7 +32,17 @@ impl CommandExecutable for Open {
                 .map(String::from)
                 .expect("Failed to read current dir name"),
         };
+        let repository_name = repository_extension(repository_name);
+        let git_remote_url = git_remote_url(&session_token, &repository_name).await?;
+
+        let _ = std::fs::remove_dir_all(git_root()?.join(&repository_name));
+
         git_init(&repository_name).await?;
+        let _ = git_remote_remove().await;
+        git_add_remote(&repository_name).await?;
+        git_push_all().await?;
+        git_set_remote(&git_remote_url).await?;
+        git_set_http_receive_pack(&repository_name).await?;
 
         let mut request = format!("{WS_SERVER_ADDR}/room/open").into_client_request()?;
         request
@@ -39,19 +50,34 @@ impl CommandExecutable for Open {
             .insert("Authorization", format!("Bearer {session_token}").parse()?);
         let (ws, _) = tokio_tungstenite::connect_async(request).await?;
 
+        let mut clipboard = Clipboard::new()?;
+        if let Err(e) = clipboard.set_text(&git_remote_url) {
+            eprintln!("{e}");
+        }
+
+        println!("{} {git_remote_url}", colored_terminal_text(255, 255, 0, "Git remote url:"));
         tokio::select! {
-            _ = websocket_handle(ws, &repository_name) => {},
+            _ = websocket_handle(ws) => {},
             _ = tokio::signal::ctrl_c() => {}
         }
 
-        std::fs::remove_dir_all(git_root()?.join(format!("{repository_name}.git")))?;
+        git_remote_remove().await?;
+        std::fs::remove_dir_all(git_root()?.join(repository_name))?;
+
         Ok(())
+    }
+}
+
+fn repository_extension(repository: String) -> String {
+    if repository.ends_with(".git") {
+        repository
+    } else {
+        format!("{repository}.git")
     }
 }
 
 async fn websocket_handle(
     mut ws: WebSocketStream<MaybeTlsStream<TcpStream>>,
-    repository: &str,
 ) -> anyhow::Result<()> {
     while let Some(Ok(message)) = ws.next().await {
         let Ok(message) = message.to_text() else {
@@ -60,18 +86,29 @@ async fn websocket_handle(
         let Ok(git_request) = serde_json::from_str::<GitRequest>(message) else {
             continue;
         };
-        let request_id = git_request.id.clone();
-        let output = execute_git_http_backend(git_request, repository)?;
+        let request_id = git_request.id;
+        let output = execute_git_http_backend(git_request)?;
         ws.send(Message::Text(
             serde_json::to_string(&GitResponse {
                 id: request_id,
                 output,
             })
-            .unwrap(),
+                .unwrap(),
         ))
-        .await?;
+            .await?;
     }
     Ok(())
+}
+
+async fn git_remote_url(session_token: &str, repository_name: &str) -> reqwest::Result<String> {
+    let user_id = reqwest::Client::new()
+        .get(format!("{HTTP_SERVER_ADDR}/user_id"))
+        .bearer_auth(session_token)
+        .send()
+        .await?
+        .text()
+        .await?;
+    Ok(format!("{HTTP_SERVER_ADDR}/git/{user_id}/{repository_name}"))
 }
 
 async fn git_init(repository: &str) -> std::io::Result<()> {
@@ -79,12 +116,66 @@ async fn git_init(repository: &str) -> std::io::Result<()> {
         .arg("init")
         .arg("--shared")
         .arg("--bare")
+        .arg("--initial-branch").arg("main")
         .arg(git_root()?.join(repository))
+        .output()?
+        .err_if_failed()?;
+    Ok(())
+}
+
+async fn git_set_http_receive_pack(repository: &str) -> std::io::Result<()> {
+    Command::new("git")
+        .arg("config")
+        .arg("http.receivepack")
+        .arg("true")
+        .current_dir(git_root()?.join(repository))
+        .output()?
+        .err_if_failed()?;
+    Ok(())
+}
+
+async fn git_add_remote(repository: &str) -> std::io::Result<()> {
+    Command::new("git")
+        .arg("remote")
+        .arg("add")
+        .arg("gph")
+        .arg(git_root()?.join(repository))
+        .output()?
+        .err_if_failed()?;
+    Ok(())
+}
+
+async fn git_push_all() -> std::io::Result<()> {
+    Command::new("git")
+        .arg("push")
+        .arg("gph")
+        .arg("--all")
         .output()?;
     Ok(())
 }
 
-fn execute_git_http_backend(request: GitRequest, repository: &str) -> std::io::Result<Vec<u8>> {
+async fn git_set_remote(git_remote_url: &str) -> std::io::Result<()> {
+    Command::new("git")
+        .arg("remote")
+        .arg("set-url")
+        .arg("gph")
+        .arg(git_remote_url)
+        .output()?
+        .err_if_failed()?;
+    Ok(())
+}
+
+async fn git_remote_remove() -> std::io::Result<()> {
+    Command::new("git")
+        .arg("remote")
+        .arg("rm")
+        .arg("gph")
+        .output()?
+        .err_if_failed()?;
+    Ok(())
+}
+
+fn execute_git_http_backend(request: GitRequest) -> std::io::Result<Vec<u8>> {
     let mut cmd = Command::new("/usr/lib/git-core/git-http-backend");
     if let Some(query) = request.query_string {
         cmd.env("QUERY_STRING", query);
@@ -101,7 +192,7 @@ fn execute_git_http_backend(request: GitRequest, repository: &str) -> std::io::R
         .env("GIT_HTTP_EXPORT_ALL", "1")
         .env(
             "PATH_INFO",
-            format!("/{repository}.git/{}", request.path_info),
+            format!("/{}", request.path_info),
         )
         .env("REQUEST_METHOD", request.required_method)
         .stdin(std::process::Stdio::piped())
