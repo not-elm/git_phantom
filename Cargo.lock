@@ -1538,7 +1538,6 @@ dependencies = [
  "axum-extra",
  "futures-util",
  "gph_core",
- "lazy_static",
  "oauth2",
  "reqwest 0.12.8",
  "serde",
@@ -1549,8 +1548,10 @@ dependencies = [
  "sqlx",
  "thiserror",
  "tokio",
+ "tokio-tungstenite",
  "tower 0.5.1",
  "tracing",
+ "uuid",
 ]
 
 [[package]]

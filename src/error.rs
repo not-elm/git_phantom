@@ -1,6 +1,7 @@
 use axum::body::Body;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use std::error::Error;
 use thiserror::Error;
 
 pub type ServerResult<T = ()> = Result<T, ServerError>;
@@ -27,7 +28,7 @@ pub enum ServerError {
 impl ServerError {
     pub fn as_status(&self) -> StatusCode {
         match self {
-            Self::MissingAuthCode | Self::InvalidSessionToken | Self::RequiredSessionToken => StatusCode::BAD_REQUEST,
+            Self::MissingAuthCode | Self::InvalidSessionToken | Self::RequiredSessionToken => StatusCode::UNAUTHORIZED,
             Self::FailedConnectGithubApi | Self::Sqlx(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
@@ -35,6 +36,8 @@ impl ServerError {
 
 impl IntoResponse for ServerError {
     fn into_response(self) -> Response {
+        #[cfg(test)]
+        eprintln!("{}", self.source().unwrap_or(&self));
         Response::builder()
             .status(self.as_status())
             .body(Body::from(self.to_string()))

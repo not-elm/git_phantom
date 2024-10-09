@@ -56,8 +56,12 @@ pub(crate) mod test {
     use axum::extract::Request;
     use axum::Router;
     use sqlx::PgPool;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use tokio::net::TcpListener;
 
     pub type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+    pub static PORT: AtomicUsize = AtomicUsize::new(5100);
 
     pub async fn test_app(pool: PgPool) -> Router {
         app(AppState {
@@ -68,5 +72,15 @@ pub(crate) mod test {
 
     pub fn auth_request() -> Request {
         Request::get("/oauth2/auth").body(Body::empty()).unwrap()
+    }
+
+    pub async fn start_server(pool: PgPool) -> usize {
+        let port = PORT.fetch_add(1, Ordering::Relaxed);
+        tokio::spawn(async move {
+            let listener = TcpListener::bind(format!("0.0.0.0:{port}")).await.unwrap();
+            let app = test_app(pool).await;
+            axum::serve(listener, app).await.unwrap();
+        });
+        port
     }
 }

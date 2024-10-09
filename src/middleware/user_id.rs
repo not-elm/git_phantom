@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::types::Uuid;
 use std::str::FromStr;
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, Default)]
 pub struct UserId(pub i64);
 
 impl UserId {
