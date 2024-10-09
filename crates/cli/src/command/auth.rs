@@ -10,6 +10,8 @@ use tokio::sync::mpsc::Sender;
 
 #[derive(Args, Debug, Clone)]
 pub struct Auth {
+    /// Port of the local server that will receive the auth-code.
+    /// (Default is 7740) 
     #[clap(short, long, default_value = "7740")]
     listen_port: u64,
 }

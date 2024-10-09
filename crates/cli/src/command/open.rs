@@ -16,6 +16,7 @@ use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 
 #[derive(Debug, Clone, Args)]
 pub struct Open {
+    /// Remote repository name.
     #[clap(short, long)]
     pub repository: Option<String>,
 }
