@@ -9,7 +9,9 @@ pub fn session_token_path() -> PathBuf {
 }
 
 pub fn app_dir() -> PathBuf {
-    let dir = dirs_next::data_local_dir().unwrap();
+    let dir = dirs_next::data_local_dir()
+        .or_else(||dirs_next::data_dir())
+        .expect("Failed to read data local or data directory");
     let gph = dir.join("gph");
     if !gph.exists() {
         std::fs::create_dir_all(&gph).expect("Failed to create app dir");

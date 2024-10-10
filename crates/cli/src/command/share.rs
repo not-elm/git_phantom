@@ -193,7 +193,8 @@ async fn git_remote_remove() -> std::io::Result<()> {
 }
 
 async fn execute_git_http_backend(request: GitRequest) -> std::io::Result<Vec<u8>> {
-    let mut cmd = Command::new("/usr/lib/git-core/git-http-backend");
+    let mut cmd = Command::new("git");
+    cmd.arg("http-backend");
 
     if let Some(query) = request.query_string {
         cmd.env("QUERY_STRING", query);

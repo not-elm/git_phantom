@@ -1,7 +1,7 @@
+use std::error::Error;
 use axum::body::Body;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use std::error::Error;
 use thiserror::Error;
 
 pub type ServerResult<T = ()> = Result<T, ServerError>;
