@@ -1,7 +1,7 @@
-use std::error::Error;
 use axum::body::Body;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use std::error::Error;
 use thiserror::Error;
 
 pub type ServerResult<T = ()> = Result<T, ServerError>;
@@ -46,10 +46,13 @@ impl ServerError {
 
 impl IntoResponse for ServerError {
     fn into_response(self) -> Response {
-        #[cfg(test)]
-        eprintln!("{}", self.source().unwrap_or(&self));
+        let status_code = self.as_status();
+        if status_code == StatusCode::INTERNAL_SERVER_ERROR {
+            tracing::error!("{}", self.source().unwrap_or(&self));
+        }
+
         Response::builder()
-            .status(self.as_status())
+            .status(status_code)
             .body(Body::from(self.to_string()))
             .unwrap()
     }
