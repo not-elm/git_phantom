@@ -34,39 +34,48 @@ impl CommandExecutable for Share {
                 .expect("Failed to read current dir name"),
         };
         let repository_name = repository_extension(repository_name);
-        let git_remote_url = git_remote_url(&session_token, &repository_name).await?;
+        let git_remote_url = create_git_remote_url(&session_token, &repository_name).await?;
 
         let _ = std::fs::remove_dir_all(git_root()?.join(&repository_name));
-
         git_init(&repository_name).await?;
-        let _ = git_remote_remove().await;
-        git_add_remote(&repository_name).await?;
-        git_push_all().await?;
-        git_set_remote(&git_remote_url).await?;
-        git_set_http_receive_pack(&repository_name).await?;
+        let result = execute_share(&session_token, &git_remote_url, &repository_name).await;
 
-        let mut request = format!("{WS_SERVER_ADDR}/share").into_client_request()?;
-        request
-            .headers_mut()
-            .insert("Authorization", format!("Bearer {session_token}").parse()?);
-        let (ws, _) = tokio_tungstenite::connect_async(request).await?;
-
-        let mut clipboard = Clipboard::new()?;
-        if let Err(e) = clipboard.set_text(&git_remote_url) {
+        if let Err(e) = git_remote_remove().await {
             eprintln!("{e}");
         }
-
-        println!("{} {git_remote_url}", colored_terminal_text(255, 255, 0, "Git remote url:"));
-        tokio::select! {
-            _ = websocket_handle(ws) => {},
-            _ = tokio::signal::ctrl_c() => {}
+        if let Err(e) = std::fs::remove_dir_all(git_root()?.join(repository_name)) {
+            eprintln!("{e}");
         }
-
-        git_remote_remove().await?;
-        std::fs::remove_dir_all(git_root()?.join(repository_name))?;
+        result?;
 
         Ok(())
     }
+}
+
+async fn execute_share(session_token: &str, git_remote_url: &str, repository_name: &str) -> anyhow::Result<()> {
+    let _ = git_remote_remove().await;
+    git_add_remote(repository_name).await?;
+    git_push_all().await?;
+    git_set_remote(git_remote_url).await?;
+    git_set_http_receive_pack(repository_name).await?;
+
+    let mut request = format!("{WS_SERVER_ADDR}/share").into_client_request()?;
+    request
+        .headers_mut()
+        .insert("Authorization", format!("Bearer {session_token}").parse()?);
+    let (ws, _) = tokio_tungstenite::connect_async(request).await?;
+
+    let mut clipboard = Clipboard::new()?;
+    if let Err(e) = clipboard.set_text(git_remote_url) {
+        eprintln!("{e}");
+    }
+
+    println!("{} {git_remote_url}", colored_terminal_text(255, 255, 0, "Git remote url:"));
+    tokio::select! {
+            _ = websocket_handle(ws) => {},
+            _ = tokio::signal::ctrl_c() => {}
+    }
+    Ok(())
 }
 
 fn repository_extension(repository: String) -> String {
@@ -101,7 +110,7 @@ async fn websocket_handle(
     Ok(())
 }
 
-async fn git_remote_url(session_token: &str, repository_name: &str) -> reqwest::Result<String> {
+async fn create_git_remote_url(session_token: &str, repository_name: &str) -> reqwest::Result<String> {
     let user_id = reqwest::Client::new()
         .get(format!("{HTTP_SERVER_ADDR}/user_id"))
         .bearer_auth(session_token)
