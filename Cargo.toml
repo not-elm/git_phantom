@@ -1,7 +1,12 @@
 [package]
 name = "gph-server"
-version = "0.1.0"
+version = "0.1.0-alpha1"
 edition = "2021"
+readme = "README.md"
+authors = ["not-elm"]
+keywords = ["git"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/not-elm/git_phantom"
 
 [workspace]
 members = [

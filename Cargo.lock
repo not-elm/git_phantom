@@ -1100,27 +1100,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d2fabcfbdc87f4758337ca535fb41a6d701b65693ce38287d856d1674551ec9b"
 
 [[package]]
-name = "gph-cli"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "arboard",
- "async-trait",
- "axum 0.7.7",
- "clap",
- "dirs-next",
- "futures-util",
- "gph_core",
- "reqwest 0.12.8",
- "serde_json",
- "tokio",
- "tokio-tungstenite",
- "webbrowser",
-]
-
-[[package]]
 name = "gph-server"
-version = "0.1.0"
+version = "0.1.0-alpha1"
 dependencies = [
  "async-stream",
  "async-trait",
@@ -1143,6 +1124,25 @@ dependencies = [
  "tower 0.5.1",
  "tracing",
  "uuid",
+]
+
+[[package]]
+name = "gph_cli"
+version = "0.1.0-alpha1"
+dependencies = [
+ "anyhow",
+ "arboard",
+ "async-trait",
+ "axum 0.7.7",
+ "clap",
+ "dirs-next",
+ "futures-util",
+ "gph_core",
+ "reqwest 0.12.8",
+ "serde_json",
+ "tokio",
+ "tokio-tungstenite",
+ "webbrowser",
 ]
 
 [[package]]

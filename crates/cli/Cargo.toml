@@ -1,7 +1,12 @@
 [package]
-name = "gph-cli"
-version = "0.1.0"
+name = "gph_cli"
+version = "0.1.0-alpha1"
 edition = "2021"
+readme = "../../README.md"
+authors = ["not-elm"]
+keywords = ["git"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/not-elm/git_phantom"
 
 [[bin]]
 name = "gph"
@@ -16,7 +21,7 @@ clap = { version = "4.5.19", features = ["derive"] }
 anyhow = "1.0.89"
 reqwest = { version = "0.12.8", features = ["json"] }
 axum = { version = "0.7.7" }
-tokio = { version = "1.40.0", features = ["sync", "rt-multi-thread", "signal"] }
+tokio = { version = "1.40.0", features = ["sync", "rt-multi-thread", "process"] }
 futures-util = "0.3.31"
 tokio-tungstenite = { version = "0.24.0", features = ["native-tls"] }
 serde_json = { workspace = true }
