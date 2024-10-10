@@ -5,6 +5,6 @@ mod command;
 mod util;
 
 #[tokio::main]
-async fn main() {
-    CliCommand::parse().execute().await.unwrap();
+async fn main() -> anyhow::Result<()> {
+    CliCommand::parse().execute().await
 }

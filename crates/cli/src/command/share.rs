@@ -1,5 +1,6 @@
 use crate::command::CommandExecutable;
 use crate::util::{app_dir, colored_terminal_text, session_token_path, OutputErr, HTTP_SERVER_ADDR, WS_SERVER_ADDR};
+use anyhow::anyhow;
 use arboard::Clipboard;
 use async_trait::async_trait;
 use clap::Args;
@@ -15,11 +16,20 @@ use tokio_tungstenite::tungstenite::client::IntoClientRequest;
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 
+
 #[derive(Debug, Clone, Args)]
 pub struct Share {
-    /// Remote repository name.
+    /// Remote repository name
     #[clap(short, long)]
     pub repository: Option<String>,
+
+    /// Don't push local commits to a shared repository
+    #[clap(long, action)]
+    pub no_push: bool,
+
+    /// Forbid other users from pushing to a shared repository
+    #[clap(long, action)]
+    pub readonly: bool,
 }
 
 #[async_trait]
@@ -39,7 +49,13 @@ impl CommandExecutable for Share {
 
         let _ = std::fs::remove_dir_all(git_root()?.join(&repository_name));
         git_init(&repository_name).await?;
-        let result = execute_share(&session_token, &git_remote_url, &repository_name).await;
+        let result = execute_share(
+            &session_token,
+            &git_remote_url,
+            &repository_name,
+            self.no_push,
+            self.readonly,
+        ).await;
 
         if let Err(e) = git_remote_remove().await {
             eprintln!("{e}");
@@ -53,12 +69,21 @@ impl CommandExecutable for Share {
     }
 }
 
-async fn execute_share(session_token: &str, git_remote_url: &str, repository_name: &str) -> anyhow::Result<()> {
+async fn execute_share(
+    session_token: &str,
+    git_remote_url: &str,
+    repository_name: &str,
+    no_push: bool,
+    readonly: bool,
+) -> anyhow::Result<()> {
     let _ = git_remote_remove().await;
     git_add_remote(repository_name).await?;
-    git_push_all().await?;
-    git_set_remote(git_remote_url).await?;
-    git_set_http_receive_pack(repository_name).await?;
+    if !no_push {
+        git_push_all().await?;
+    }
+    if !readonly {
+        git_set_http_receive_pack(repository_name).await?;
+    }
 
     let mut request = format!("{WS_SERVER_ADDR}/share").into_client_request()?;
     request
@@ -159,25 +184,19 @@ async fn git_add_remote(repository: &str) -> std::io::Result<()> {
     Ok(())
 }
 
-async fn git_push_all() -> std::io::Result<()> {
+async fn git_push_all() -> anyhow::Result<()> {
     Command::new("git")
         .arg("push")
         .arg("gph")
         .arg("--all")
         .output()
-        .await?;
-    Ok(())
-}
-
-async fn git_set_remote(git_remote_url: &str) -> std::io::Result<()> {
-    Command::new("git")
-        .arg("remote")
-        .arg("set-url")
-        .arg("gph")
-        .arg(git_remote_url)
-        .output()
-        .await?
-        .err_if_failed()?;
+        .await
+        .and_then(|output| output.err_if_failed())
+        .map_err(|e| {
+            anyhow!(
+                r#"{}\nIf you don't need to push, add `--no-push` flag\nError source: {e}"#,
+                colored_terminal_text(255, 0, 0, "Failed to push local commits!"))
+        })?;
     Ok(())
 }
 
