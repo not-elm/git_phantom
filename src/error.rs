@@ -37,8 +37,9 @@ pub enum ServerError {
 impl ServerError {
     pub fn as_status(&self) -> StatusCode {
         match self {
-            Self::MissingAuthCode | Self::FailedRecvGitResponse | Self::FailedParseRequestBody | Self::UserRoomIsNotOpen => StatusCode::BAD_REQUEST,
+            Self::MissingAuthCode | Self::FailedRecvGitResponse | Self::FailedParseRequestBody => StatusCode::BAD_REQUEST,
             Self::InvalidSessionToken | Self::RequiredSessionToken => StatusCode::UNAUTHORIZED,
+            Self::UserRoomIsNotOpen => StatusCode::NOT_FOUND,
             Self::FailedConnectGithubApi | Self::Sqlx(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }

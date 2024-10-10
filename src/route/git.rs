@@ -116,7 +116,7 @@ mod tests {
         let response = app
             .oneshot(git_request(UserId(0), "sample.git", "/info/refs"))
             .await?;
-        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
         Ok(())
     }
 
