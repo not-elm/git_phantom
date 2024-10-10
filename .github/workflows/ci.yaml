@@ -22,10 +22,9 @@ jobs:
           - 5435:5432
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
       - name: Test all features
         run: cargo test --all-features
         env:
