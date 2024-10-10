@@ -11,7 +11,7 @@ externally.
 ## Install
 
 ```shell
-cargo install gph-cli
+cargo install gph_cli
 ```
 
 ## Usage
