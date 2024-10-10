@@ -1128,7 +1128,7 @@ dependencies = [
 
 [[package]]
 name = "gph_cli"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "anyhow",
  "arboard",
@@ -1147,7 +1147,7 @@ dependencies = [
 
 [[package]]
 name = "gph_core"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "anyhow",
  "futures-util",
