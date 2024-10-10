@@ -1,6 +1,6 @@
 [package]
 name = "gph_cli"
-version = "0.1.0-alpha1"
+version = "0.1.0-alpha.1"
 edition = "2021"
 readme = "../../README.md"
 description = "Expose local git repository via tunneling server"
