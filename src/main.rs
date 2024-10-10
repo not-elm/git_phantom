@@ -32,8 +32,8 @@ fn app(app_state: AppState) -> Router {
             "hello world"
         }))
         .nest("/oauth2", oauth2_router())
-        .nest("/room", room_router())
         .route("/user_id", get(route::user_id))
+        .route("/share", get(route::share))
         .route("/git/:user_id/*path", get(route::git).post(route::git))
         .with_state(app_state)
 }
@@ -42,11 +42,6 @@ fn oauth2_router() -> Router<AppState> {
     Router::new()
         .route("/auth", get(route::oauth2::auth))
         .route("/register", put(route::oauth2::register))
-}
-
-fn room_router() -> Router<AppState> {
-    Router::new()
-        .route("/open", get(route::room::open))
 }
 
 

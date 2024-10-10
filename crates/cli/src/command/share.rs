@@ -45,7 +45,7 @@ impl CommandExecutable for Share {
         git_set_remote(&git_remote_url).await?;
         git_set_http_receive_pack(&repository_name).await?;
 
-        let mut request = format!("{WS_SERVER_ADDR}/room/open").into_client_request()?;
+        let mut request = format!("{WS_SERVER_ADDR}/share").into_client_request()?;
         request
             .headers_mut()
             .insert("Authorization", format!("Bearer {session_token}").parse()?);

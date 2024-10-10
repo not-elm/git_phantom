@@ -11,7 +11,7 @@ use gph_core::types::GitResponse;
 use sqlx::PgPool;
 
 
-pub async fn open(
+pub async fn share(
     user_id: UserId,
     State(pool): State<PgPool>,
     ws: WebSocketUpgrade,
@@ -88,7 +88,7 @@ mod tests {
     #[sqlx::test]
     async fn err_if_missing_session_token(pool: PgPool) {
         let port = start_server(pool).await;
-        let error = connect_async(&format!("ws://localhost:{port}/room/open")).await.unwrap_err();
+        let error = connect_async(&format!("ws://localhost:{port}/share")).await.unwrap_err();
         if let tokio_tungstenite::tungstenite::Error::Http(response) = error {
             assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
         } else {
@@ -145,7 +145,7 @@ mod tests {
     }
 
     async fn connect(port: usize, session_token: &SessionToken) -> tokio_tungstenite::tungstenite::Result<WebSocketStream<MaybeTlsStream<TcpStream>>> {
-        let mut request = format!("ws://localhost:{port}/room/open").into_client_request()?;
+        let mut request = format!("ws://localhost:{port}/share").into_client_request()?;
         request.headers_mut().insert(header::AUTHORIZATION, format!("Bearer {}", session_token.0).parse()?);
         connect_async(request)
             .await
