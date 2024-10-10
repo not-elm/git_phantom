@@ -1,17 +1,22 @@
 use serde::{Deserialize, Serialize};
-use webrtc::peer_connection::sdp::session_description::RTCSessionDescription;
+use uuid::Uuid;
 
-#[derive(Debug, Serialize, Deserialize)]
-pub enum UserMessage {
-    Sdp{
-        offer_description: RTCSessionDescription
-    }
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, Eq, PartialEq)]
+pub struct RequestId(pub Uuid);
+
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Eq, PartialEq)]
+pub struct GitRequest {
+    pub id: RequestId,
+    pub path_info: String,
+    pub required_method: String,
+    pub query_string: Option<String>,
+    pub content_length: Option<String>,
+    pub content_type: Option<String>,
+    pub body: Vec<u8>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub enum OwnerMessage {
-    Sdp{
-        answer_description: RTCSessionDescription
-    }
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct GitResponse {
+    pub id: RequestId,
+    pub output: Vec<u8>,
 }
-

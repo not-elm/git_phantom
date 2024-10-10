@@ -1,0 +1,13 @@
+services:
+  meltos-db:
+    image: postgres:14
+    container_name: meltos-db
+    ports:
+      - "5438:5432"
+    environment:
+      POSTGRES_USER: '${DATABASE_USER}'
+      POSTGRES_PASSWORD: '${DATABASE_PASS}'
+      POSTGRES_DB: '${DATABASE_DB_NAME}'
+
+    volumes:
+      - ./migrations/001_init.sql:/docker-entrypoint-initdb.d
