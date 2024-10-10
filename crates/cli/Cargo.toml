@@ -3,6 +3,7 @@ name = "gph_cli"
 version = "0.1.0-alpha1"
 edition = "2021"
 readme = "../../README.md"
+description = "Expose local git repository via tunneling server"
 authors = ["not-elm"]
 keywords = ["git"]
 license = "MIT OR Apache-2.0"
@@ -13,7 +14,7 @@ name = "gph"
 path = "./src/main.rs"
 
 [dependencies]
-gph_core = { path = "../core" }
+gph_core = { path = "../core", version = "0.1.0-alpha1" }
 arboard = "3.4.1"
 webbrowser = "1.0.2"
 dirs-next = "2.0.0"

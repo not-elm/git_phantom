@@ -5,8 +5,10 @@ edition = "2021"
 readme = "README.md"
 authors = ["not-elm"]
 keywords = ["git"]
+description = "git_phantom server"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/not-elm/git_phantom"
+publish = false
 
 [workspace]
 members = [
