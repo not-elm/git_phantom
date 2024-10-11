@@ -9,18 +9,13 @@ use tokio::net::TcpListener;
 use tokio::sync::mpsc::Sender;
 
 #[derive(Args, Debug, Clone)]
-pub struct Auth {
-    /// Port of the local server that will receive the auth-code.
-    /// (Default is 7740) 
-    #[clap(short, long, default_value = "7740")]
-    listen_port: u64,
-}
+pub struct Auth;
 
 #[async_trait]
 impl CommandExecutable for Auth {
     async fn execute(self) -> anyhow::Result<()> {
         let (tx, mut rx) = tokio::sync::mpsc::channel::<String>(1);
-        start_http_server(self.listen_port, tx);
+        start_http_server(7740, tx);
         webbrowser::open(&format!("{HTTP_SERVER_ADDR}/oauth2/auth"))?;
 
         let auth_code = rx
