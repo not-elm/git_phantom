@@ -4,7 +4,7 @@ use uuid::Uuid;
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, Eq, PartialEq)]
 pub struct RequestId(pub Uuid);
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Eq, PartialEq)]
+#[derive(Debug, Default, serde::Serialize, serde::Deserialize, Clone, Eq, PartialEq)]
 pub struct GitRequest {
     pub id: RequestId,
     pub path_info: String,

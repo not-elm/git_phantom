@@ -9,6 +9,7 @@ use axum::http::{header, HeaderMap, HeaderName, HeaderValue};
 use axum::response::{IntoResponse, Response};
 use futures_util::{pin_mut, StreamExt};
 use http_body_util::BodyExt;
+use reqwest::StatusCode;
 use sqlx::PgPool;
 use std::str::FromStr;
 
@@ -57,21 +58,23 @@ async fn listen_request(
         .await
         .ok_or(ServerError::FailedRecvGitResponse)?;
 
-    Ok(convert_to_response(&response))
+    convert_to_response(&response)
 }
 
-fn convert_to_response(output: &[u8]) -> Response {
+fn convert_to_response(output: &[u8]) -> ServerResult<Response> {
     let mut response = Response::<Body>::default();
-    let (body_index, headers) = parse_headers(output);
+    let (status_code, body_index, headers) = parse_headers(output)?;
+    *response.status_mut() = status_code;
     *response.headers_mut() = headers;
     if body_index < output.len() {
         *response.body_mut() = Body::from(output[body_index..].to_vec());
     }
-    response
+    Ok(response)
 }
 
-fn parse_headers(output: &[u8]) -> (usize, HeaderMap<HeaderValue>) {
-    let header_end_index = header_end_index(output).unwrap();
+fn parse_headers(output: &[u8]) -> ServerResult<(StatusCode, usize, HeaderMap<HeaderValue>)> {
+    let header_end_index = header_end_index(output).ok_or(ServerError::FailedParseGitResponse)?;
+    let mut status = StatusCode::OK;
     let mut headers = HeaderMap::new();
     for line in std::str::from_utf8(&output[..=header_end_index]).unwrap().split("\r\n") {
         let mut header = line.split(": ");
@@ -81,10 +84,17 @@ fn parse_headers(output: &[u8]) -> (usize, HeaderMap<HeaderValue>) {
         let Some(header_value) = header.next() else {
             continue;
         };
-        headers.insert(HeaderName::from_str(header_name).unwrap(), HeaderValue::from_str(header_value).unwrap());
+        if header_name == "Status" {
+            let row_status = header_value.split(" ").next().ok_or(ServerError::FailedParseGitResponse)?;
+            status = StatusCode::from_bytes(row_status.as_ref()).map_err(|_| ServerError::FailedParseGitResponse)?;
+        } else {
+            let name = HeaderName::from_str(header_name).map_err(|_| ServerError::FailedParseGitResponse)?;
+            let value = HeaderValue::from_str(header_value).map_err(|_| ServerError::FailedParseGitResponse)?;
+            headers.insert(name, value);
+        }
     }
 
-    (header_end_index + 5, headers)
+    Ok((status, header_end_index + 5, headers))
 }
 
 fn header_end_index(output: &[u8]) -> Option<usize> {
@@ -103,12 +113,25 @@ fn header_end_index(output: &[u8]) -> Option<usize> {
 #[cfg(test)]
 mod tests {
     use crate::middleware::user_id::UserId;
+    use crate::route::git::convert_to_response;
     use crate::test::{test_app, TestResult};
     use axum::body::Body;
     use axum::extract::Request;
     use axum::http::StatusCode;
     use sqlx::PgPool;
     use tower::ServiceExt;
+
+    #[test]
+    fn status_code_is_404() {
+        let response = convert_to_response(include_str!("../../test_resources/status_404").as_ref()).unwrap();
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[test]
+    fn status_code_is_500() {
+        let response = convert_to_response(include_str!("../../test_resources/status_500").as_ref()).unwrap();
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
 
     #[sqlx::test]
     async fn err_if_invalid_user(pool: PgPool) -> TestResult {

@@ -29,6 +29,9 @@ pub enum ServerError {
     #[error("Failed recv git response")]
     FailedRecvGitResponse,
 
+    #[error("Failed parse git response")]
+    FailedParseGitResponse,
+
     #[cfg_attr(test, error("sqlx error: {0}"))]
     #[cfg_attr(not(test), error("internal server error"))]
     Sqlx(#[from] sqlx::Error),
@@ -40,7 +43,7 @@ impl ServerError {
             Self::MissingAuthCode | Self::FailedRecvGitResponse | Self::FailedParseRequestBody => StatusCode::BAD_REQUEST,
             Self::InvalidSessionToken | Self::RequiredSessionToken => StatusCode::UNAUTHORIZED,
             Self::UserRoomIsNotOpen => StatusCode::NOT_FOUND,
-            Self::FailedConnectGithubApi | Self::Sqlx(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Self::FailedParseGitResponse | Self::FailedConnectGithubApi | Self::Sqlx(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
