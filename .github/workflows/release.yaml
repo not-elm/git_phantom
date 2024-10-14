@@ -43,7 +43,7 @@ jobs:
           target: ${{ matrix.job.target }}
           override: true
           profile: minimal
-      - uses:
+
       # targetに応じてcargoもしくはcrossを使用してビルド
       - name: Build
         uses: actions-rs/cargo@v1

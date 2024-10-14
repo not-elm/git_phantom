@@ -11,16 +11,31 @@ externally.
 ## Install
 
 ```shell
-cargo install gph_cli
+$ cargo install gph_cli
 ```
 
 ## Usage
 
+### Auth(required)
+
+You need to authenticate oauth2 with your GitHub account.
+
 ```shell
-gph auth
-# go to local git repository.
-cd hoge 
-gph share
+$ gph auth
+```
+
+### Share your local git repository
+
+Execute the following command on the root of the repository.
+
+```shell
+$ gph share [OPTIONS]
+
+Options:
+  -r, --repository <REPOSITORY>  Remote repository name
+      --no-push                  Don't push local commits to a shared repository
+      --readonly                 Forbid other users from pushing to a shared repository
+  -h, --help                     Print help
 ```
 
 ## Licence
