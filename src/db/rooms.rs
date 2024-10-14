@@ -38,11 +38,12 @@ impl RoomsTable for PgPool {
 
 #[cfg(test)]
 mod tests {
+    use crate::db::channel::guest::new_request;
     use crate::db::rooms::RoomsTable;
     use crate::error::ServerError;
     use crate::middleware::user_id::UserId;
     use crate::test::TestResult;
-    use sqlx::PgPool;
+    use sqlx::{PgPool, Row};
 
     #[sqlx::test]
     async fn err_if_user_not_exists(pool: PgPool) {
@@ -63,6 +64,20 @@ mod tests {
         pool.update_room_status(UserId::USER1, false).await?;
         let is_open = pool.is_open_room(UserId::USER1).await?;
         assert!(!is_open);
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn ok_delete_request_after_close_room(pool: PgPool) -> TestResult {
+        pool.update_room_status(UserId::USER1, true).await?;
+        new_request(&pool, UserId::USER1, &[]).await?;
+        pool.update_room_status(UserId::USER1, false).await?;
+        let count: i64 = sqlx::query("SELECT count(*) FROM requests where user_id=$1")
+            .bind(UserId::USER1.0)
+            .fetch_one(&pool)
+            .await?
+            .get(0);
+        assert_eq!(count, 0);
         Ok(())
     }
 }

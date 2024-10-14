@@ -117,7 +117,7 @@ mod tests {
         let port = start_server(pool.clone()).await;
         let mut ws = connect(port, &SESSION1).await?;
         let request_body = vec![1, 2, 3];
-        let request_id = new_request(&pool, &request_body).await?;
+        let request_id = new_request(&pool, UserId::USER1, &request_body).await?;
         let request_notify = RequestNotify {
             to: UserId::USER1,
             id: request_id,
