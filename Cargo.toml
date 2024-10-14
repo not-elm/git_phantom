@@ -16,16 +16,14 @@ members = [
 ]
 
 [dependencies]
+dotenv = "0.15.0"
 gph_core = { path = "crates/core" }
 async-stream = "0.3.6"
 thiserror = "1.0.64"
-axum = { version = "0.7.4", features = ["ws"] }
+axum = { version = "0.7.7", features = ["ws"] }
 axum-extra = { version = "0.9.4", features = ["typed-header"] }
-shuttle-axum = "0.47.0"
-shuttle-runtime = "0.47.0"
-shuttle-shared-db = { version = "0.47.0", features = ["postgres", "sqlx"] }
-sqlx = { version = "0.7.1", features = ["uuid", "time"] }
-tokio = "1.28.2"
+sqlx = { version = "0.8.2", features = ["uuid", "time", "postgres", "runtime-tokio"] }
+tokio = { version = "1.40.0", features = ["rt-multi-thread"] }
 oauth2 = "4.4.2"
 serde = { workspace = true }
 serde_json = { workspace = true }
