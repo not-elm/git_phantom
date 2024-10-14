@@ -9,7 +9,6 @@ use axum::routing::put;
 use axum::{routing::get, Router};
 use sqlx::PgPool;
 use std::error::Error;
-use tokio::net::TcpListener;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -24,10 +23,47 @@ async fn main() -> Result<(), Box<dyn Error>> {
         pool,
         github_credentials: GithubCredentials::load(),
     });
-    let listener = TcpListener::bind("0.0.0.0:8080").await?;
-    axum::serve(listener, app).await?;
+    #[cfg(debug_assertions)]
+    http::start_server(app).await?;
+    #[cfg(not(debug_assertions))]
+    https::start_server(app).await?;
     Ok(())
 }
+
+#[cfg(debug_assertions)]
+mod http {
+    use axum::Router;
+    use tokio::net::TcpListener;
+
+    pub async fn start_server(app: Router) -> Result<(), Box<dyn std::error::Error>> {
+        let listener = TcpListener::bind("0.0.0.0:8080").await?;
+        axum::serve(listener, app).await?;
+        Ok(())
+    }
+}
+
+#[cfg(not(debug_assertions))]
+mod https {
+    use axum::Router;
+    use axum_server::tls_rustls::RustlsConfig;
+    use std::net::SocketAddr;
+    use std::path::PathBuf;
+
+    pub async fn start_server(app: Router) -> Result<(), Box<dyn std::error::Error>> {
+        let config = RustlsConfig::from_pem_file(
+            PathBuf::from(std::env::var("CERT_PEM").expect("Failed to read CERT_PEM")),
+            PathBuf::from(std::env::var("KEY_PEM").expect("Failed to read KEY_PEM")),
+        )
+            .await?;
+
+        let addr = SocketAddr::from(([0, 0, 0, 0], 443));
+        axum_server::bind_rustls(addr, config)
+            .serve(app.into_make_service())
+            .await?;
+        Ok(())
+    }
+}
+
 
 fn app(app_state: AppState) -> Router {
     Router::new()
