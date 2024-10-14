@@ -1,6 +1,6 @@
 [package]
 name = "gph_cli"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 readme = "../../README.md"
 description = "Expose local git repository via tunneling server"
@@ -14,7 +14,7 @@ name = "gph"
 path = "./src/main.rs"
 
 [dependencies]
-gph_core = { path = "../core", version = "0.1.0-alpha.1" }
+gph_core = { path = "../core", version = "0.1.0" }
 arboard = "3.4.1"
 webbrowser = "1.0.2"
 dirs-next = "2.0.0"

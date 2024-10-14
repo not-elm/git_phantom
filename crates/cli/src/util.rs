@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 use std::process::Output;
 
-pub const HTTP_SERVER_ADDR: &str = "https://gph-server.shuttleapp.rs";
-pub const WS_SERVER_ADDR: &str = "wss://gph-server.shuttleapp.rs";
+pub const HTTP_SERVER_ADDR: &str = "https://git-phantom.com";
+pub const WS_SERVER_ADDR: &str = "wss://git-phantom.com";
 
 pub fn session_token_path() -> PathBuf {
     app_dir().join(".session")
@@ -10,7 +10,7 @@ pub fn session_token_path() -> PathBuf {
 
 pub fn app_dir() -> PathBuf {
     let dir = dirs_next::data_local_dir()
-        .or_else(||dirs_next::data_dir())
+        .or_else(|| dirs_next::data_dir())
         .expect("Failed to read data local or data directory");
     let gph = dir.join("gph");
     if !gph.exists() {
