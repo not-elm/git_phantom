@@ -1,5 +1,6 @@
 use crate::db::channel::RequestNotify;
 use crate::error::ServerResult;
+use crate::middleware::user_id::UserId;
 use async_stream::__private::AsyncStream;
 use gph_core::types::RequestId;
 use sqlx::postgres::PgListener;
@@ -35,10 +36,11 @@ pub async fn request_to_owner(pool: &PgPool, request: &RequestNotify) -> ServerR
     Ok(())
 }
 
-pub(crate) async fn new_request(pool: &PgPool, request_body: &[u8]) -> ServerResult<RequestId> {
+pub(crate) async fn new_request(pool: &PgPool, user_id: UserId, request_body: &[u8]) -> ServerResult<RequestId> {
     let request_id = sqlx::query(r#"
-    INSERT INTO requests(request_body) VALUES($1) RETURNING request_id
+    INSERT INTO requests(user_id, request_body) VALUES($1, $2) RETURNING request_id
     "#)
+        .bind(user_id.0)
         .bind(request_body)
         .fetch_one(pool)
         .await?
@@ -72,14 +74,14 @@ mod tests {
 
     #[sqlx::test]
     async fn ok_new_request(pool: PgPool) -> TestResult {
-        let id = new_request(&pool, &[]).await?;
+        let id = new_request(&pool, UserId::USER1, &[]).await?;
         assert!(!id.0.as_bytes().is_empty());
         Ok(())
     }
 
     #[sqlx::test]
     async fn ok_recv_response(pool: PgPool) -> TestResult {
-        let id = new_request(&pool, &[]).await?;
+        let id = new_request(&pool, UserId::USER1, &[]).await?;
         let stream = channel::guest::listen(pool.clone(), id).await?;
         pin_mut!(stream);
 
@@ -102,7 +104,7 @@ mod tests {
         pool.init().await;
         let stream = channel::owner::listen(pool.clone(), UserId::USER1).await?;
         pin_mut!(stream);
-        let request_id = new_request(&pool, &[]).await?;
+        let request_id = new_request(&pool, UserId::USER1, &[]).await?;
         let request = RequestNotify {
             id: request_id,
             to: UserId::USER1,
@@ -127,7 +129,7 @@ mod tests {
     async fn no_recv_request(pool: PgPool) -> TestResult {
         let stream = channel::owner::listen(pool.clone(), UserId::USER1).await?;
         pin_mut!(stream);
-        let request_id = new_request(&pool, &[]).await?;
+        let request_id = new_request(&pool, UserId::USER1, &[]).await?;
         let request = RequestNotify {
             id: request_id,
             ..Default::default()

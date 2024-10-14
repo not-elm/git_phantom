@@ -7,30 +7,66 @@ mod state;
 use crate::state::{AppState, GithubCredentials};
 use axum::routing::put;
 use axum::{routing::get, Router};
-use shuttle_runtime::SecretStore;
 use sqlx::PgPool;
+use std::error::Error;
 
-#[shuttle_runtime::main]
-async fn main(
-    #[shuttle_shared_db::Postgres] pool: PgPool,
-    #[shuttle_runtime::Secrets] store: SecretStore,
-) -> shuttle_axum::ShuttleAxum {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    dotenv::dotenv().ok();
+    let db_url = std::env::var("DATABASE_URL")?;
+    let pool = PgPool::connect(&db_url).await?;
     sqlx::migrate!()
         .run(&pool)
         .await
         .expect("Failed to run migrate");
-    let router = app(AppState {
+    let app = app(AppState {
         pool,
-        github_credentials: GithubCredentials::load(store),
+        github_credentials: GithubCredentials::load(),
     });
-    Ok(router.into())
+    #[cfg(debug_assertions)]
+    http::start_server(app).await?;
+    #[cfg(not(debug_assertions))]
+    https::start_server(app).await?;
+    Ok(())
 }
+
+#[cfg(debug_assertions)]
+mod http {
+    use axum::Router;
+    use tokio::net::TcpListener;
+
+    pub async fn start_server(app: Router) -> Result<(), Box<dyn std::error::Error>> {
+        let listener = TcpListener::bind("0.0.0.0:8080").await?;
+        axum::serve(listener, app).await?;
+        Ok(())
+    }
+}
+
+#[cfg(not(debug_assertions))]
+mod https {
+    use axum::Router;
+    use axum_server::tls_rustls::RustlsConfig;
+    use std::net::SocketAddr;
+    use std::path::PathBuf;
+
+    pub async fn start_server(app: Router) -> Result<(), Box<dyn std::error::Error>> {
+        let config = RustlsConfig::from_pem_file(
+            PathBuf::from(std::env::var("CERT_PEM").expect("Failed to read CERT_PEM")),
+            PathBuf::from(std::env::var("KEY_PEM").expect("Failed to read KEY_PEM")),
+        )
+            .await?;
+
+        let addr = SocketAddr::from(([0, 0, 0, 0], 443));
+        axum_server::bind_rustls(addr, config)
+            .serve(app.into_make_service())
+            .await?;
+        Ok(())
+    }
+}
+
 
 fn app(app_state: AppState) -> Router {
     Router::new()
-        .route("/", get(|| async move {
-            "hello world"
-        }))
         .nest("/oauth2", oauth2_router())
         .route("/user_id", get(route::user_id))
         .route("/share", get(route::share))
@@ -63,7 +99,7 @@ pub(crate) mod test {
     pub async fn test_app(pool: PgPool) -> Router {
         app(AppState {
             pool,
-            github_credentials: GithubCredentials::load_test(),
+            github_credentials: GithubCredentials::load(),
         })
     }
 

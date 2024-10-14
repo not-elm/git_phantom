@@ -46,7 +46,7 @@ async fn listen_request(
         return Err(ServerError::FailedParseRequestBody);
     };
 
-    let request_id = db::channel::guest::new_request(&pool, request_body.to_bytes().as_ref()).await?;
+    let request_id = db::channel::guest::new_request(&pool, user_id, request_body.to_bytes().as_ref()).await?;
     request_notify.id = request_id;
     let stream = db::channel::guest::listen(pool.clone(), request_id).await?;
     pin_mut!(stream);

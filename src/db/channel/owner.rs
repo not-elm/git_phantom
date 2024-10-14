@@ -57,13 +57,14 @@ mod tests {
     use crate::db::channel::guest::{new_request, pop_response};
     use crate::db::channel::owner::response;
     use crate::error::ServerError;
+    use crate::middleware::user_id::UserId;
     use crate::test::TestResult;
     use sqlx::postgres::PgListener;
     use sqlx::{PgPool, Row};
 
     #[sqlx::test]
     async fn ok_response(pool: PgPool) -> TestResult {
-        let request_id = new_request(&pool, &[]).await?;
+        let request_id = new_request(&pool, UserId::USER1, &[]).await?;
         let output = vec![1, 2, 3];
         response(&pool, &request_id, &output).await?;
         let actual = pop_response(&pool, &request_id).await?;
@@ -73,7 +74,7 @@ mod tests {
 
     #[sqlx::test]
     async fn err_response_if_not_exists_response(pool: PgPool) -> TestResult {
-        let request_id = new_request(&pool, &[]).await?;
+        let request_id = new_request(&pool, UserId::USER1, &[]).await?;
         let result = pop_response(&pool, &request_id).await;
         assert!(matches!(result, Err(ServerError::Sqlx(_))));
         Ok(())
@@ -81,7 +82,7 @@ mod tests {
 
     #[sqlx::test]
     async fn request_deleted_after_pop(pool: PgPool) -> TestResult {
-        let request_id = new_request(&pool, &[]).await?;
+        let request_id = new_request(&pool, UserId::USER1, &[]).await?;
         let output = vec![1, 2, 3];
         response(&pool, &request_id, &output).await?;
         assert_eq!(requests_count(&pool).await?, 1);
@@ -96,7 +97,7 @@ mod tests {
         let mut guest_listener = PgListener::connect_with(&pool).await?;
         guest_listener.listen("guest").await?;
 
-        let request_id = new_request(&pool, &[]).await?;
+        let request_id = new_request(&pool, UserId::USER1, &[]).await?;
         let output = vec![1, 2, 3];
         response(&pool, &request_id, &output).await?;
 
