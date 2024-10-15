@@ -8,6 +8,7 @@ use std::collections::HashMap;
 use tokio::net::TcpListener;
 use tokio::sync::mpsc::Sender;
 
+
 #[derive(Args, Debug, Clone)]
 pub struct Auth;
 
@@ -57,12 +58,15 @@ async fn oauth2_callback(
 }
 
 async fn register_user(auth_code: String) -> anyhow::Result<String> {
-    let session_token = reqwest::Client::new()
+    let session_token = reqwest::ClientBuilder::new()
+        .use_rustls_tls()
+        .build()?
         .put(format!(
             "{HTTP_SERVER_ADDR}/oauth2/register?code={auth_code}"
         ))
         .send()
         .await?
+        .error_for_status()?
         .text()
         .await?;
     Ok(session_token)
