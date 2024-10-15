@@ -8,7 +8,7 @@ use futures_util::{SinkExt, StreamExt};
 use gph_core::types::{GitRequest, GitResponse};
 use std::env;
 use std::path::PathBuf;
-use std::process::Stdio;
+use std::process::{Stdio};
 use std::sync::Arc;
 use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
@@ -104,8 +104,8 @@ async fn execute_share(
     }
 
     println!("{} {git_remote_url}", colored_terminal_text(255, 255, 0, "Git remote url:"));
-    println!("Added git-remote `gph`");
-    println!("`gph` is destroyed when the forked shell is terminated by `exit`.");
+    println!("{}", colored_terminal_text(255, 255, 0, "Added git-remote `gph`"));
+    println!("{}", colored_terminal_text(255, 255, 0,"`gph` is destroyed when the forked shell is terminated by `exit`.\n"));
 
     tokio::select! {
             result= tokio::spawn(async move{ websocket_handle(ws).await }) => result??,
