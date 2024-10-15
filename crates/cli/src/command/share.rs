@@ -1,6 +1,6 @@
 use crate::command::CommandExecutable;
 use crate::util::{app_dir, colored_terminal_text, session_token_path, OutputErr, HTTP_SERVER_ADDR, WS_SERVER_ADDR};
-use anyhow::anyhow;
+use anyhow::{anyhow, bail};
 use arboard::Clipboard;
 use async_trait::async_trait;
 use clap::Args;
@@ -8,7 +8,8 @@ use futures_util::{SinkExt, StreamExt};
 use gph_core::types::{GitRequest, GitResponse};
 use std::env;
 use std::path::PathBuf;
-use std::process::Stdio;
+use std::process::{Stdio};
+use std::sync::Arc;
 use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
 use tokio::process::Command;
@@ -35,7 +36,9 @@ pub struct Share {
 #[async_trait]
 impl CommandExecutable for Share {
     async fn execute(self) -> anyhow::Result<()> {
-        let session_token = std::fs::read_to_string(session_token_path())?;
+        let session_token = std::fs::read_to_string(session_token_path())
+            .map_err(|e| anyhow!("Failed to read session token.\nIf you haven't authenticated yet, run `gph auth`\n{e:?}"))?;
+
         let repository_name = match self.repository {
             Some(repository) => repository,
             None => env::current_dir()?
@@ -85,11 +88,15 @@ async fn execute_share(
         git_set_http_receive_pack(repository_name).await?;
     }
 
+   let config = rustls_platform_verifier::tls_config();
+    let connector = tokio_tungstenite::Connector::Rustls(Arc::new(config));
     let mut request = format!("{WS_SERVER_ADDR}/share").into_client_request()?;
     request
         .headers_mut()
         .insert("Authorization", format!("Bearer {session_token}").parse()?);
-    let (ws, _) = tokio_tungstenite::connect_async(request).await?;
+    let (ws, _) = tokio_tungstenite::connect_async_tls_with_config(request, None, false, Some(connector))
+        .await
+        .map_err(|e|anyhow!("Failed to connect websocket: \n{e}"))?;
 
     let mut clipboard = Clipboard::new()?;
     if let Err(e) = clipboard.set_text(git_remote_url) {
@@ -97,6 +104,9 @@ async fn execute_share(
     }
 
     println!("{} {git_remote_url}", colored_terminal_text(255, 255, 0, "Git remote url:"));
+    println!("{}", colored_terminal_text(255, 255, 0, "Added git-remote `gph`"));
+    println!("{}", colored_terminal_text(255, 255, 0,"`gph` is destroyed when the forked shell is terminated by `exit`.\n"));
+
     tokio::select! {
             result= tokio::spawn(async move{ websocket_handle(ws).await }) => result??,
             result = spawn_shell() => result?
@@ -136,14 +146,18 @@ async fn websocket_handle(
     Ok(())
 }
 
-async fn create_git_remote_url(session_token: &str, repository_name: &str) -> reqwest::Result<String> {
-    let user_id = reqwest::Client::new()
+async fn create_git_remote_url(session_token: &str, repository_name: &str) -> anyhow::Result<String> {
+    let response = reqwest::ClientBuilder::new()
+        .use_rustls_tls()
+        .build()?
         .get(format!("{HTTP_SERVER_ADDR}/user_id"))
         .bearer_auth(session_token)
         .send()
-        .await?
-        .text()
         .await?;
+    if !response.status().is_success(){
+        bail!("{}", response.text().await?);
+    }
+    let user_id = response.text().await?;
     Ok(format!("{HTTP_SERVER_ADDR}/git/{user_id}/{repository_name}"))
 }
 
