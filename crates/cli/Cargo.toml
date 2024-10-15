@@ -1,11 +1,15 @@
 [package]
 name = "gph_cli"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 readme = "../../README.md"
 description = "Expose local git repository via tunneling server"
 authors = ["not-elm"]
-keywords = ["git"]
+keywords = ["git", "cli"]
+categories = [
+    "command-line-utilities",
+    "development-tools",
+]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/not-elm/git_phantom"
 
