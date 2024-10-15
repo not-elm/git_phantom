@@ -2,7 +2,7 @@ use crate::state::GithubCredentials;
 use axum::extract::State;
 use axum::response::{IntoResponse, Redirect, Response};
 use oauth2::basic::BasicClient;
-use oauth2::{AuthUrl, CsrfToken, Scope, TokenUrl};
+use oauth2::{AuthUrl, CsrfToken, TokenUrl};
 
 
 pub async fn auth(
@@ -10,7 +10,6 @@ pub async fn auth(
 ) -> Response {
     let (auth_url, _csrf_token) = oauth_client(credential.clone())
         .authorize_url(CsrfToken::new_random)
-        .add_scope(Scope::new("user".to_string()))
         .url();
     Redirect::to(auth_url.as_ref()).into_response()
 }
